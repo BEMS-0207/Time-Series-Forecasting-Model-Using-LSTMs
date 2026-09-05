@@ -1,0 +1,40 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Power Outage LSTM Predictor</title>
+<style>
+body{font-family:Arial,sans-serif;max-width:1050px;margin:0 auto;padding:24px;background:#f5f7fb;color:#172033}
+.card{background:white;border-radius:14px;padding:20px;margin:14px 0;box-shadow:0 2px 10px #0001}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.metric{font-size:25px;font-weight:bold}.muted{color:#687386}
+button{padding:12px 18px;border:0;border-radius:8px;background:#172033;color:#fff;cursor:pointer}
+pre{white-space:pre-wrap}
+</style>
+</head>
+<body>
+<h1>Power Outage Prediction</h1>
+<p class="muted">LSTM time-series forecasting demonstration</p>
+<div class="grid">
+{% for k in ["accuracy","precision","recall","f1","roc_auc"] %}
+<div class="card"><div class="muted">{{k|upper}}</div><div class="metric">{{ "%.2f"|format(metrics[k]*100) }}%</div></div>
+{% endfor %}
+</div>
+<div class="card">
+<h2>Model</h2>
+<p>Input window: <b>{{metrics.window_hours}} hours</b></p>
+<p>Features: {{metrics.features|join(", ")}}</p>
+<p>The dashboard uses the latest 24 records from the demonstration dataset. For a production system, connect the prediction endpoint to live or regularly updated power-system data.</p>
+</div>
+<div class="card">
+<h2>Latest data</h2>
+<table border="1" cellpadding="6" cellspacing="0" width="100%">
+<tr><th>Timestamp</th><th>Load</th><th>Voltage</th><th>Temp</th><th>Rain</th><th>Outage</th></tr>
+{% for r in latest[-10:] %}
+<tr><td>{{r.timestamp}}</td><td>{{r.load_mw}}</td><td>{{r.voltage_v}}</td><td>{{r.temperature_c}}</td><td>{{r.rainfall_mm}}</td><td>{{r.outage}}</td></tr>
+{% endfor %}
+</table>
+</div>
+</body>
+</html>
