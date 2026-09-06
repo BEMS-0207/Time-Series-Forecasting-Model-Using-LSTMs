@@ -1,40 +1,65 @@
 <!doctype html>
-<html>
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Power Outage LSTM Predictor</title>
-<style>
-body{font-family:Arial,sans-serif;max-width:1050px;margin:0 auto;padding:24px;background:#f5f7fb;color:#172033}
-.card{background:white;border-radius:14px;padding:20px;margin:14px 0;box-shadow:0 2px 10px #0001}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
-.metric{font-size:25px;font-weight:bold}.muted{color:#687386}
-button{padding:12px 18px;border:0;border-radius:8px;background:#172033;color:#fff;cursor:pointer}
-pre{white-space:pre-wrap}
-</style>
-</head>
-<body>
-<h1>Power Outage Prediction</h1>
-<p class="muted">LSTM time-series forecasting demonstration</p>
-<div class="grid">
-{% for k in ["accuracy","precision","recall","f1","roc_auc"] %}
-<div class="card"><div class="muted">{{k|upper}}</div><div class="metric">{{ "%.2f"|format(metrics[k]*100) }}%</div></div>
-{% endfor %}
-</div>
-<div class="card">
-<h2>Model</h2>
-<p>Input window: <b>{{metrics.window_hours}} hours</b></p>
-<p>Features: {{metrics.features|join(", ")}}</p>
-<p>The dashboard uses the latest 24 records from the demonstration dataset. For a production system, connect the prediction endpoint to live or regularly updated power-system data.</p>
-</div>
-<div class="card">
-<h2>Latest data</h2>
-<table border="1" cellpadding="6" cellspacing="0" width="100%">
-<tr><th>Timestamp</th><th>Load</th><th>Voltage</th><th>Temp</th><th>Rain</th><th>Outage</th></tr>
-{% for r in latest[-10:] %}
-<tr><td>{{r.timestamp}}</td><td>{{r.load_mw}}</td><td>{{r.voltage_v}}</td><td>{{r.temperature_c}}</td><td>{{r.rainfall_mm}}</td><td>{{r.outage}}</td></tr>
-{% endfor %}
-</table>
-</div>
-</body>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Power outage duration forecasting results" />
+    <title>Outage Forecasting Lab</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Outage Forecasting Lab home">
+        <span class="brand-mark">OF</span>
+        <span>Outage Forecasting <em>Lab</em></span>
+      </a>
+      <span class="status-pill" id="status"><span></span> Loading results</span>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">LSTM / POWER SYSTEMS</p>
+          <h1>Forecast the<br /><i>duration</i> of disruption.</h1>
+          <p class="hero-text">A transparent view of the model's chronological test results, built from the Major Power Outage Events dataset.</p>
+        </div>
+        <div class="hero-note">
+          <span class="note-label">TARGET VARIABLE</span>
+          <strong>Outage duration</strong>
+          <span>minutes · chronological split</span>
+        </div>
+      </section>
+
+      <section class="metric-grid" id="metrics" aria-label="Evaluation metrics">
+        <div class="metric-card"><span>MAE</span><strong data-metric="MAE">--</strong><small>minutes</small></div>
+        <div class="metric-card"><span>MSE</span><strong data-metric="MSE">--</strong><small>minutes²</small></div>
+        <div class="metric-card"><span>RMSE</span><strong data-metric="RMSE">--</strong><small>minutes</small></div>
+        <div class="metric-card accent"><span>R²</span><strong data-metric="R²">--</strong><small>coefficient of determination</small></div>
+      </section>
+
+      <section class="content-section">
+        <div class="section-heading">
+          <div><p class="eyebrow">MODEL OUTPUT</p><h2>What the model saw</h2></div>
+          <p class="section-summary" id="summary">Reading the saved evaluation artifacts...</p>
+        </div>
+        <div class="chart-grid" id="charts"></div>
+      </section>
+
+      <section class="content-section results-section">
+        <div class="section-heading">
+          <div><p class="eyebrow">TEST SET</p><h2>Prediction sample</h2></div>
+          <p class="section-summary">The first 20 chronological test predictions.</p>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>Record</th><th>Actual (min)</th><th>Predicted (min)</th><th>Residual (min)</th></tr></thead><tbody id="predictions"><tr><td colspan="4">Loading...</td></tr></tbody></table></div>
+      </section>
+
+      <details class="configuration content-section">
+        <summary><span><span class="eyebrow">REPRODUCIBILITY</span><strong>Model configuration</strong></span><span class="chevron">+</span></summary>
+        <div class="config-grid" id="configuration"></div>
+      </details>
+    </main>
+
+    <footer><span>POWER OUTAGE DURATION FORECASTING</span><span>Results are generated from the saved test run.</span></footer>
+    <script src="/app.js" defer></script>
+  </body>
 </html>
