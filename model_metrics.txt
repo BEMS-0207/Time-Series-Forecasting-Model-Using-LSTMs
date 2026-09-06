@@ -1,0 +1,29 @@
+LSTM POWER OUTAGE DURATION PREDICTION - MODEL METRICS
+============================================================
+MAE:  2661.2412 minutes
+MSE:  73899608.0000 minutes²
+RMSE: 8596.4883 minutes
+R²:   -0.0022
+
+============================================================
+MODEL CONFIGURATION
+============================================================
+Total Records: 1398
+Original Records: 1534
+Original Variables: 57
+Missing Target Records: 58
+Features Used: 47
+Sequence Length: 30
+Training Samples: 1094
+Testing Samples: 274
+Train/Test Split: 80% / 20% chronological
+Epochs Trained: 18
+Batch Size: 32
+LSTM Layers: 2
+LSTM Units: 64, 32
+Dense Layers: 16 ReLU, 1 linear
+Activation Functions: tanh (LSTM), relu, linear
+Dropout: 0.2
+Optimizer: Adam
+Loss Function: MSE
+Features: ['OBS', 'ANOMALY.LEVEL', 'DEMAND.LOSS.MW', 'CUSTOMERS.AFFECTED', 'RES.PRICE', 'COM.PRICE', 'IND.PRICE', 'TOTAL.PRICE', 'RES.SALES', 'COM.SALES', 'IND.SALES', 'TOTAL.SALES', 'RES.PERCEN', 'COM.PERCEN', 'IND.PERCEN', 'RES.CUSTOMERS', 'COM.CUSTOMERS', 'IND.CUSTOMERS', 'TOTAL.CUSTOMERS', 'RES.CUST.PCT', 'COM.CUST.PCT', 'IND.CUST.PCT', 'PC.REALGSP.STATE', 'PC.REALGSP.USA', 'PC.REALGSP.REL', 'PC.REALGSP.CHANGE', 'UTIL.REALGSP', 'TOTAL.REALGSP', 'UTIL.CONTRI', 'PI.UTIL.OFUSA', 'POPULATION', 'POPPCT_URBAN', 'POPPCT_UC', 'POPDEN_URBAN', 'POPDEN_UC', 'POPDEN_RURAL', 'AREAPCT_URBAN', 'AREAPCT_UC', 'PCT_LAND', 'PCT_WATER_TOT', 'PCT_WATER_INLAND', 'START_YEAR', 'START_MONTH', 'START_DAYOFYEAR', 'START_DAYOFWEEK', 'START_MONTH_SIN', 'START_MONTH_COS']

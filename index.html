@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Power outage duration forecasting results" />
+    <title>Outage Forecasting Lab</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Outage Forecasting Lab home">
+        <span class="brand-mark">OF</span>
+        <span>Outage Forecasting <em>Lab</em></span>
+      </a>
+      <span class="status-pill" id="status"><span></span> Loading results</span>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">LSTM / POWER SYSTEMS</p>
+          <h1>Forecast the<br /><i>duration</i> of disruption.</h1>
+          <p class="hero-text">A transparent view of the model's chronological test results, built from the Major Power Outage Events dataset.</p>
+        </div>
+        <div class="hero-note">
+          <span class="note-label">TARGET VARIABLE</span>
+          <strong>Outage duration</strong>
+          <span>minutes · chronological split</span>
+        </div>
+      </section>
+
+      <section class="metric-grid" id="metrics" aria-label="Evaluation metrics">
+        <div class="metric-card"><span>MAE</span><strong data-metric="MAE">--</strong><small>minutes</small></div>
+        <div class="metric-card"><span>MSE</span><strong data-metric="MSE">--</strong><small>minutes²</small></div>
+        <div class="metric-card"><span>RMSE</span><strong data-metric="RMSE">--</strong><small>minutes</small></div>
+        <div class="metric-card accent"><span>R²</span><strong data-metric="R²">--</strong><small>coefficient of determination</small></div>
+      </section>
+
+      <section class="content-section">
+        <div class="section-heading">
+          <div><p class="eyebrow">MODEL OUTPUT</p><h2>What the model saw</h2></div>
+          <p class="section-summary" id="summary">Reading the saved evaluation artifacts...</p>
+        </div>
+        <div class="chart-grid" id="charts"></div>
+      </section>
+
+      <section class="content-section results-section">
+        <div class="section-heading">
+          <div><p class="eyebrow">TEST SET</p><h2>Prediction sample</h2></div>
+          <p class="section-summary">The first 20 chronological test predictions.</p>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>Record</th><th>Actual (min)</th><th>Predicted (min)</th><th>Residual (min)</th></tr></thead><tbody id="predictions"><tr><td colspan="4">Loading...</td></tr></tbody></table></div>
+      </section>
+
+      <details class="configuration content-section">
+        <summary><span><span class="eyebrow">REPRODUCIBILITY</span><strong>Model configuration</strong></span><span class="chevron">+</span></summary>
+        <div class="config-grid" id="configuration"></div>
+      </details>
+    </main>
+
+    <footer><span>POWER OUTAGE DURATION FORECASTING</span><span>Results are generated from the saved test run.</span></footer>
+    <script src="/app.js" defer></script>
+  </body>
+</html>

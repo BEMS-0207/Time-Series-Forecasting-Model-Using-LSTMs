@@ -1,0 +1,2 @@
+# Vercel's API uses only Python's standard library.
+# Install requirements-training.txt for local model training and Streamlit.
