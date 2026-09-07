@@ -1,9 +1,9 @@
 LSTM POWER OUTAGE DURATION PREDICTION - MODEL METRICS
 ============================================================
-MAE:  2416.3633 minutes
-MSE:  78313072.0000 minutes²
-RMSE: 8849.4678 minutes
-R²:   -0.0621
+MAE:  2587.0811 minutes
+MSE:  76248040.0000 minutes²
+RMSE: 8732.0127 minutes
+R²:   -0.0341
 
 ============================================================
 MODEL CONFIGURATION
@@ -17,7 +17,7 @@ Sequence Length: 30
 Training Samples: 1094
 Testing Samples: 274
 Train/Test Split: 80% / 20% chronological
-Epochs Trained: 15
+Epochs Trained: 14
 Batch Size: 32
 LSTM Layers: 2
 LSTM Units: 64, 32

@@ -35,7 +35,7 @@ streamlit run streamlit_app.py
 
 1. Open [share.streamlit.io](https://share.streamlit.io) and sign in with GitHub.
 2. Select this repository, the `main` branch, and `streamlit_app.py` as the main file.
-3. Deploy the app. Streamlit Cloud installs the packages from `requirements.txt`.
+3. Deploy the app. Streamlit Cloud uses Python 3.10.13 from `runtime.txt` and installs the packages from `requirements.txt`.
 
 The committed workbook and latest result files allow the dashboard to open with
 results immediately. Use the training button in the dashboard to generate a
