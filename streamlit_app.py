@@ -1,4 +1,6 @@
 from pathlib import Path
+import json
+import os
 import subprocess
 import sys
 
@@ -6,14 +8,8 @@ import pandas as pd
 import streamlit as st
 
 PROJECT_DIR = Path(__file__).resolve().parent
-OUTPUT_FILES = [
-    "1_distribution_analysis.png",
-    "2_training_loss.png",
-    "3_actual_vs_predicted.png",
-    "4_scatter_plot.png",
-    "5_residual_plot.png",
-]
 DATASET_PATH = PROJECT_DIR / "Outage_Data.xlsx"
+PROGRESS_PREFIX = "TRAINING_PROGRESS "
 
 st.set_page_config(
     page_title="Power Outage Forecasting",
@@ -38,12 +34,18 @@ def load_metrics():
     return metrics
 
 
-@st.cache_data
 def load_predictions():
     predictions_path = PROJECT_DIR / "predictions.csv"
     if not predictions_path.exists():
         return pd.DataFrame()
     return pd.read_csv(predictions_path)
+
+
+def load_training_history():
+    history_path = PROJECT_DIR / "training_history.csv"
+    if not history_path.exists():
+        return pd.DataFrame()
+    return pd.read_csv(history_path)
 
 
 @st.cache_data
@@ -72,12 +74,60 @@ else:
     st.dataframe(dataset.head(10), use_container_width=True)
 
 if st.button("Train model and refresh results"):
-    with st.spinner("Running the forecasting pipeline. This may take a minute..."):
-        try:
-            subprocess.run([sys.executable, str(PROJECT_DIR / "app.py")], check=True)
-        except subprocess.CalledProcessError as exc:
-            st.error(f"Training failed with exit code {exc.returncode}. Check the terminal output for details.")
-            st.stop()
+    st.subheader("Live training progress")
+    progress_chart = st.empty()
+    progress_status = st.empty()
+    training_log = st.empty()
+    epochs = []
+    loss_values = []
+    validation_loss_values = []
+    log_lines = []
+
+    environment = os.environ.copy()
+    environment["PYTHONUNBUFFERED"] = "1"
+    process = subprocess.Popen(
+        [sys.executable, "-u", str(PROJECT_DIR / "app.py")],
+        cwd=PROJECT_DIR,
+        env=environment,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+    )
+
+    for line in process.stdout:
+        line = line.rstrip()
+        if line.startswith(PROGRESS_PREFIX):
+            try:
+                update = json.loads(line[len(PROGRESS_PREFIX):])
+            except json.JSONDecodeError:
+                continue
+            if update.get("event") == "epoch":
+                epochs.append(update["epoch"])
+                loss_values.append(update.get("loss"))
+                validation_loss_values.append(update.get("val_loss"))
+                progress_data = pd.DataFrame(
+                    {
+                        "Epoch": epochs,
+                        "Training loss": loss_values,
+                        "Validation loss": validation_loss_values,
+                    }
+                ).set_index("Epoch")
+                progress_chart.line_chart(
+                    progress_data,
+                )
+                progress_status.info(f"Completed epoch {update['epoch']} of up to 100")
+        elif line:
+            log_lines.append(line)
+            training_log.code("\n".join(log_lines[-12:]), language="text")
+
+    return_code = process.wait()
+    if return_code:
+        st.error(f"Training failed with exit code {return_code}. See the training log above.")
+        st.stop()
+
+    progress_status.success(f"Training completed after {len(epochs)} epoch(s).")
+    load_metrics.clear()
     st.success("Training run completed. Refreshing results...")
     st.rerun()
 
@@ -109,25 +159,69 @@ if metrics:
 else:
     st.info("No saved metrics were found yet. Click 'Train model and refresh results' to generate them.")
 
+history = load_training_history()
+predictions = load_predictions()
+
 st.subheader("Generated charts")
-chart_cols = st.columns(2)
-for index, filename in enumerate(OUTPUT_FILES):
-    path = PROJECT_DIR / filename
-    if not path.exists():
-        st.info("This chart is not available yet. Train the model to generate it.")
-        continue
-    with chart_cols[index % 2]:
-        st.image(path.read_bytes(), use_column_width=True)
+st.caption("Five combined charts generated from the complete evaluation result.")
+chart_columns = st.columns(2)
+
+with chart_columns[0]:
+    st.write("1. Outage duration distribution")
+    if dataset.empty:
+        st.info("Dataset data is unavailable.")
+    else:
+        durations = pd.to_numeric(dataset["OUTAGE.DURATION"], errors="coerce").dropna()
+        durations = durations[durations > 0]
+        distribution = pd.cut(durations, bins=20).value_counts().sort_index().rename("Records")
+        distribution.index = distribution.index.astype(str)
+        st.bar_chart(distribution, height=300)
+
+with chart_columns[1]:
+    st.write("2. Training and validation loss")
+    if history.empty:
+        st.info("Train the model to generate this chart.")
+    else:
+        st.line_chart(history.set_index("Epoch")[["Training Loss", "Validation Loss"]], height=300)
+
+with chart_columns[0]:
+    st.write("3. Actual versus predicted")
+    if predictions.empty:
+        st.info("Train the model to generate this chart.")
+    else:
+        prediction_chart = predictions[["Actual", "Predicted"]].copy()
+        prediction_chart.index.name = "Test sample"
+        st.line_chart(prediction_chart, height=300)
+
+with chart_columns[1]:
+    st.write("4. Prediction comparison")
+    if predictions.empty:
+        st.info("Train the model to generate this chart.")
+    else:
+        comparison = predictions[["Actual", "Predicted"]].rename(
+            columns={"Actual": "Actual duration", "Predicted": "Predicted duration"}
+        )
+        st.scatter_chart(comparison, x="Actual duration", y="Predicted duration", height=300)
+
+with chart_columns[0]:
+    st.write("5. Residual analysis")
+    if predictions.empty:
+        st.info("Train the model to generate this chart.")
+    else:
+        residual_chart = predictions[["Predicted", "Residual"]].rename(
+            columns={"Predicted": "Predicted duration", "Residual": "Residual"}
+        )
+        st.scatter_chart(residual_chart, x="Predicted duration", y="Residual", height=300)
 
 st.subheader("Predictions")
-predictions = load_predictions()
 if predictions.empty:
     st.info("No prediction file is available yet.")
 else:
+
     st.dataframe(predictions.head(20), use_container_width=True)
 
 st.subheader("Project files")
-for filename in ["model_metrics.txt", "predictions.csv"]:
+for filename in ["model_metrics.txt", "training_history.csv", "predictions.csv"]:
     path = PROJECT_DIR / filename
     if path.exists():
         with open(path, "r", encoding="utf-8") as file:

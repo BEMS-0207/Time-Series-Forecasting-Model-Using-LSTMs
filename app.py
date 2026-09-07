@@ -369,9 +369,6 @@ import urllib.request
 import warnings
 import zipfile
 
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
@@ -546,23 +543,6 @@ print(f"  - Std Dev: {np.std(y):.2f} minutes")
 print(f"  - Min: {np.min(y):.2f} minutes")
 print(f"  - Max: {np.max(y):.2f} minutes")
 
-fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-axes[0].hist(y, bins=50, edgecolor="black", alpha=0.7)
-axes[0].axvline(np.mean(y), color="red", linestyle="--", label=f"Mean: {np.mean(y):.0f} min")
-axes[0].axvline(np.median(y), color="green", linestyle="--", label=f"Median: {np.median(y):.0f} min")
-axes[0].set_xlabel("Outage Duration (minutes)")
-axes[0].set_ylabel("Frequency")
-axes[0].set_title("Distribution of Outage Durations")
-axes[0].legend()
-
-axes[1].boxplot(y)
-axes[1].set_ylabel("Outage Duration (minutes)")
-axes[1].set_title("Box Plot of Outage Durations")
-
-plt.tight_layout()
-fig.savefig(OUTPUT_DIR / "1_distribution_analysis.png", dpi=300, bbox_inches="tight")
-print("✓ Saved distribution plot as '1_distribution_analysis.png'")
-
 print("\n[4/8] Scaling data...")
 split_row = int(len(X) * 0.8)
 scaler_X = MinMaxScaler(feature_range=(0, 1))
@@ -605,6 +585,18 @@ model.compile(optimizer="adam", loss="mse", metrics=["mae"])
 print("\nModel Architecture:")
 model.summary()
 
+class LiveProgressCallback(tf.keras.callbacks.Callback):
+    def on_train_begin(self, logs=None):
+        print("TRAINING_PROGRESS " + json.dumps({"event": "start"}), flush=True)
+
+    def on_epoch_end(self, epoch, logs=None):
+        values = {key: float(value) for key, value in (logs or {}).items()}
+        values["epoch"] = epoch + 1
+        print("TRAINING_PROGRESS " + json.dumps({"event": "epoch", **values}), flush=True)
+
+    def on_train_end(self, logs=None):
+        print("TRAINING_PROGRESS " + json.dumps({"event": "complete"}), flush=True)
+
 early_stop = EarlyStopping(monitor="val_loss", patience=10, restore_best_weights=True, verbose=1)
 history = model.fit(
     X_train,
@@ -612,11 +604,19 @@ history = model.fit(
     epochs=100,
     batch_size=32,
     validation_split=0.2,
-    callbacks=[early_stop],
+    callbacks=[early_stop, LiveProgressCallback()],
     shuffle=False,
     verbose=0,
 )
 print(f"✓ Model trained for {len(history.history['loss'])} epochs")
+
+history_df = pd.DataFrame({
+    "Epoch": np.arange(1, len(history.history["loss"]) + 1),
+    "Training Loss": history.history["loss"],
+    "Validation Loss": history.history.get("val_loss", [np.nan] * len(history.history["loss"])),
+})
+history_df.to_csv(OUTPUT_DIR / "training_history.csv", index=False)
+print("✓ Saved training history to 'training_history.csv'")
 
 print("\n[8/8] Evaluating model...")
 y_pred_scaled = model.predict(X_test, verbose=0).reshape(-1, 1)
@@ -637,59 +637,7 @@ print(f"  RMSE (Root Mean Squared Error): {rmse:.2f} minutes")
 print(f"  R²   (Coefficient of Determination): {r2:.4f}")
 print("=" * 60)
 
-print("\nGenerating visualizations...")
-
-fig1, ax = plt.subplots(figsize=(12, 5))
-ax.plot(history.history["loss"], label="Training Loss", linewidth=2)
-if "val_loss" in history.history:
-    ax.plot(history.history["val_loss"], label="Validation Loss", linewidth=2)
-ax.set_xlabel("Epoch")
-ax.set_ylabel("Loss (MSE)")
-ax.set_title("Training and Validation Loss")
-ax.legend()
-ax.grid(True, alpha=0.3)
-plt.tight_layout()
-fig1.savefig(OUTPUT_DIR / "2_training_loss.png", dpi=300, bbox_inches="tight")
-print("✓ Saved training loss plot as '2_training_loss.png'")
-
-fig2, ax = plt.subplots(figsize=(14, 6))
-ax.plot(range(len(y_actual)), y_actual, "b-", label="Actual Duration", linewidth=2, alpha=0.8)
-ax.plot(range(len(y_pred)), y_pred, "r-", label="Predicted Duration", linewidth=2, alpha=0.8)
-ax.set_xlabel("Test Sample Index")
-ax.set_ylabel("Outage Duration (minutes)")
-ax.set_title("Actual vs Predicted Outage Duration (Test Set)")
-ax.legend()
-ax.grid(True, alpha=0.3)
-plt.tight_layout()
-fig2.savefig(OUTPUT_DIR / "3_actual_vs_predicted.png", dpi=300, bbox_inches="tight")
-print("✓ Saved actual vs predicted plot as '3_actual_vs_predicted.png'")
-
-fig3, ax = plt.subplots(figsize=(8, 8))
-min_val = min(np.min(y_actual), np.min(y_pred))
-max_val = max(np.max(y_actual), np.max(y_pred))
-ax.scatter(y_actual, y_pred, alpha=0.5, s=30)
-ax.plot([min_val, max_val], [min_val, max_val], "r--", linewidth=2, label="Perfect Prediction")
-ax.set_xlabel("Actual Outage Duration (minutes)")
-ax.set_ylabel("Predicted Outage Duration (minutes)")
-ax.set_title(f"Predicted vs Actual (R² = {r2:.4f})")
-ax.legend()
-ax.grid(True, alpha=0.3)
-plt.tight_layout()
-fig3.savefig(OUTPUT_DIR / "4_scatter_plot.png", dpi=300, bbox_inches="tight")
-print("✓ Saved scatter plot as '4_scatter_plot.png'")
-
-fig4, ax = plt.subplots(figsize=(12, 5))
 residuals = y_actual - y_pred
-ax.scatter(y_pred, residuals, alpha=0.5, s=30)
-ax.axhline(y=0, color="r", linestyle="--", linewidth=2)
-ax.set_xlabel("Predicted Duration (minutes)")
-ax.set_ylabel("Residual (Actual - Predicted)")
-ax.set_title("Residual Plot")
-ax.grid(True, alpha=0.3)
-plt.tight_layout()
-fig4.savefig(OUTPUT_DIR / "5_residual_plot.png", dpi=300, bbox_inches="tight")
-print("✓ Saved residual plot as '5_residual_plot.png'")
-
 print("\nSaving results...")
 with open(OUTPUT_DIR / "model_metrics.txt", "w", encoding="utf-8") as f:
     f.write("LSTM POWER OUTAGE DURATION PREDICTION - MODEL METRICS\n")
@@ -734,11 +682,7 @@ print("\n" + "=" * 80)
 print("PROJECT COMPLETED SUCCESSFULLY!")
 print("=" * 80)
 print("\nGenerated Files:")
-print("  1. 1_distribution_analysis.png - Outage duration distribution")
-print("  2. 2_training_loss.png - Training and validation loss")
-print("  3. 3_actual_vs_predicted.png - Actual vs predicted line plot")
-print("  4. 4_scatter_plot.png - Scatter plot with R²")
-print("  5. 5_residual_plot.png - Residual analysis")
-print("  6. model_metrics.txt - All evaluation metrics")
-print("  7. predictions.csv - Actual and predicted values")
+print("  1. training_history.csv - Training and validation loss data")
+print("  2. model_metrics.txt - All evaluation metrics")
+print("  3. predictions.csv - Actual, predicted, and residual values")
 print("\n" + "=" * 80) 

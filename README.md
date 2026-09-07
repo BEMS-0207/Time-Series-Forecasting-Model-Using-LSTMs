@@ -24,12 +24,22 @@ flowchart LR
 
 ## Run
 
-Install the dependencies and run the training pipeline:
+Install the dependencies and launch the Streamlit dashboard:
 
 ```bash
 python -m pip install -r requirements.txt
-python app.py
+streamlit run streamlit_app.py
 ```
+
+## Deploy to Streamlit Community Cloud
+
+1. Open [share.streamlit.io](https://share.streamlit.io) and sign in with GitHub.
+2. Select this repository, the `main` branch, and `streamlit_app.py` as the main file.
+3. Deploy the app. Streamlit Cloud installs the packages from `requirements.txt`.
+
+The committed workbook and latest result files allow the dashboard to open with
+results immediately. Use the training button in the dashboard to generate a
+fresh model run and refresh the charts.
 
 The script looks for `outage data.xlsx` or `Outage_Data.xlsx` in the project directory. If neither file is available, it attempts to download the Purdue Engineering workbook from the configured `OUTAGE_DATA_URL`.
 
@@ -39,7 +49,8 @@ The current Purdue endpoint may return a server error. In that case, download th
 OUTAGE_DATA_URL="https://example.org/Outage_Data.xlsx" python app.py
 ```
 
-Generated plots, metrics, and predictions are written to the project directory.
+The dashboard can train the model and writes generated plots, metrics, and
+predictions to the project directory.
 
 ## Latest Reproducible Run
 
@@ -71,35 +82,8 @@ included as a record of the current run, not as fixed claims about future runs.
 
 The Streamlit dashboard displays the source preview, preprocessing/model
 configuration, all four metrics, training/validation loss, actual-versus-
-predicted duration, and exported predictions. Run it with:
-
-```bash
-streamlit run streamlit_app.py
-```
-
-Generated files include `1_distribution_analysis.png`, `2_training_loss.png`,
-`3_actual_vs_predicted.png`, `model_metrics.txt`, and `predictions.csv`.
-
-## Deploy to Vercel
-
-The Vercel deployment serves the saved model results through a lightweight
-Python API and a static dashboard. TensorFlow training is intentionally kept
-out of the serverless request path because model training is too large and
-long-running for a Vercel function.
-
-1. Install the local training environment and generate fresh artifacts when
-	needed:
-
-	```bash
-	python -m pip install -r requirements-training.txt
-	python app.py
-	```
-
-2. Commit the generated `model_metrics.txt`, `predictions.csv`, and PNG charts.
-3. Import the repository into Vercel. No build command or environment variable
-	is required. The hosted dashboard is served from `index.html`, and the API
-	is available at `/api/results`.
-
-The root `requirements.txt` is intentionally empty of third-party packages so
-Vercel does not try to install TensorFlow. Use `requirements-training.txt` for
-local training and the Streamlit dashboard.
+predicted duration, and exported predictions. The generated charts area provides
+five combined interactive charts summarizing the complete evaluation result.
+Generated files include
+`training_history.csv`, `model_metrics.txt`, and `predictions.csv`. The
+dashboard renders the combined charts directly from these current data files.
